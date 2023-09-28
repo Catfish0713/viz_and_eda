@@ -1,0 +1,218 @@
+---
+title: "Visualization with ggplot2"
+author: "Ruixi Li"
+date: "2023-09-28"
+output: html_document
+---
+
+```{r setup, message=FALSE}
+library(tidyverse)
+library(ggridges)
+```
+
+## load the  weather data
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USW00022534", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2021-01-01",
+    date_max = "2022-12-31") |>
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USC00519397 = "Molokai_HI",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) |>
+  select(name, id, everything())
+
+weather_df
+```
+
+## Scatterplots
+
+first scatterplot ever
+
+```{r}
+ggplot(weather_df,aes(x = tmin, y = tmax)) +
+  geom_point()
+
+```
+New proach, same plot
+
+```{r}
+
+  weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point()
+```
+save and edit plot objects
+```{r}
+weather_plot = weather_df |> 
+  ggplot(aes(x = tmin, y = tmax))
+
+weather_plot + geom_point()
+```
+
+
+## Advanced scatterplot
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+```
+three lines with different colors
+what about the `aes` replacement...?
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point(aes(color = name)) +
+  geom_smooth()
+```
+only one blue line
+
+
+
+lets facet some thing
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+  facet_grid(. ~ name)# divide by name into columns,when revert . and name <-  divide by name into rows;also can replace . with other variables
+```
+
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax,alpha = tmin, color = name)) +
+  geom_point(size =0.2) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name)
+```
+* alpha=tmin adjust transparency-left is more transparent than right
+* alpha=tmax adjust transparency-down is more transparent than up
+*alpha=0.2, setup in geom_point() to serve as a global option,transparency =0.2
+
+
+combine some elements and plot them
+
+```{r}
+ggplot(weather_df, aes(x = date, y = tmax, color = name)) + 
+  geom_point(aes(size = prcp), alpha = .5) +
+  geom_smooth(se = FALSE) + 
+  facet_grid(. ~ name)
+```
+
+## some small notes
+you can have whatever geoms you want.
+```{r}
+ggplot(weather_df, aes(x = date, y = tmax, color = name)) + 
+  geom_smooth(se = FALSE) 
+```
+
+
+```{r}
+ggplot(weather_df, aes(x = tmax, y = tmin)) + 
+  geom_hex()#蜂巢
+
+
+ggplot(weather_df, aes(x = tmax, y = tmin)) + 
+  geom_bin2d()#square
+
+ggplot(weather_df, aes(x = tmax, y = tmin)) + 
+  geom_density2d()#等线图
+```
+
+## univariate plots
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram(size =0.2) + 
+  facet_grid(. ~ name)
+
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram(position = "dodge") 
+```
+
+
+
+let's try a new geomtry
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_density(alpha = 0.3, adjust=0.5) 
+```
+density plot will lose some information(little bumps),using `adjust` may help rescue
+
+
+
+boxplot
+
+
+```{r}
+
+weather_df |>
+  ggplot(aes(x = name, y = tmin)) + 
+  geom_boxplot()
+```
+
+
+
+
+
+
+trendy plots
+
+
+```{r}
+weather_df |>
+  ggplot(aes(x = name, y = tmin, fill=name)) + 
+  geom_violin() +
+  stat_summary()
+```
+
+
+
+ridge plots- the most  popular plot in 2017
+
+```{r}
+weather_df |>
+  ggplot(aes(x = tmin, y = name, fill=name)) + 
+  geom_density_ridges()
+
+```
+it's very nice to use rideg plots when you have 40-50 categories.
+
+## save and embed
+
+```{r}
+ggsave("weather_plot.png",weather_plot, width=8, height =5)
+```
+
+embed
+```{r}
+weather_plot =
+  weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+
+```
+
+
+embed at a different size
+
+```{r fig.width= 12,fig.height=6}
+weather_plot
+```
+
